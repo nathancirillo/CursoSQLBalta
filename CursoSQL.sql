@@ -246,3 +246,20 @@ WHERE
 SELECT [Id],[Nome], [CategoriaId]
 FROM [Curso]
 ORDER BY [Nome] DESC
+
+
+-- UPDATE: possibilita realizar alterações de dados com base em uma condicional 
+-- Atenção: caso não seja informado o WHERE todos os dados serão alterados
+-- É sempre bom fazer o seguinte: criar uma transação antes de um UPDATE ou DELETE
+-- Para isso usa-se: BEGIN TRAN ou BEGIN TRANSACTION
+-- Após vem o comando desejado de UPDATE ou DELETE
+-- No final é sempre bom deixar o ROLLBACK. Assim primeiro verá o nº de linhas afetadas
+-- Se tudo estiver correto ai execute o COMMIT 
+
+BEGIN TRANSACTION 
+    UPDATE [Categoria] SET [Nome] = 'Azure' WHERE [Id] = 3
+ROLLBACK
+
+SELECT TOP 10 * FROM [Categoria]
+
+
