@@ -181,7 +181,7 @@ CREATE TABLE [Curso](
 SELECT NEWID()
 
 
--- GERADOR À PARTIR DA AULA SOBRE INSERT
+-- GERADO À PARTIR DA AULA SOBRE INSERT
 CREATE DATABASE [Cursos]
 
 USE [Cursos]
@@ -249,6 +249,7 @@ ORDER BY [Nome] DESC
 
 
 -- UPDATE: possibilita realizar alterações de dados com base em uma condicional 
+-- Após o SET definimos os valores que queremos alterar. Basta separar por vírgula para alterar vários compos simultaneamente
 -- Atenção: caso não seja informado o WHERE todos os dados serão alterados
 -- É sempre bom fazer o seguinte: criar uma transação antes de um UPDATE ou DELETE
 -- Para isso usa-se: BEGIN TRAN ou BEGIN TRANSACTION
@@ -261,5 +262,227 @@ BEGIN TRANSACTION
 ROLLBACK
 
 SELECT TOP 10 * FROM [Categoria]
+
+
+-- DELETE: permite apagar registros da sua tabela
+-- Funciona de forma similar ao UPDATE, sendo interessante usar transction em conjunto também
+-- Não será possível apagar um registro que está sendo usado por outra tabela (chave estrangeira)
+BEGIN TRAN 
+DELETE FROM [Curso] WHERE [CategoriaId] = 3
+DELETE FROM [Categoria] WHERE [Id] = 3
+ROLLBACK
+
+-- MIN(), MAX(), COUNT(), AVG() E SUM()
+-- Nunca usar nenhuma dessas funções com *
+-- AVG() e SUM() fazem mais sentido quando usados com valores
+
+--MIN: sempre irá trazer o menor valor numérico da coluna informada
+SELECT MIN([Id]) FROM [Categoria]
+--MAX: sempre irá trazer o maior valor numérico da coluna informada
+SELECT MAX([CategoriaId]) FROM [Curso]
+--COUNT: irá contar o número de *itens não nulos* que temos na tabela
+SELECT COUNT([Id]) FROM [Curso]
+--AVG: tirá a média dos valores da coluna informada
+SELECT AVG([Id]) FROM [Curso]
+--SUM: retorna a soma dos valores da coluna informada 
+SELECT SUM([CategoriaId]) FROM Curso WHERE Id > 2
+
+
+-- LIKE: operador usado para procurar algo similar
+-- Nem sempre o = será adequada, pois estará procurando exatamente
+-- Usado em conjunto com o sinal de porcentagem. Exemplos: 
+-- 'Fundamentos%' -> começa com fundamentos 
+-- 'fundamentos%' -> termina com fundamentos
+-- '%fundamentos%' -> contém fundamentos em qualquer parte
+SELECT * FROM [Curso] WHERE [Nome] LIKE 'Fundamentos%'
+SELECT * FROM [Curso] WHERE [Nome] LIKE '%de%'
+SELECT * FROM [Curso] WHERE [Nome] LIKE '%C#'
+
+-- IN: espera um array de valores para que possa comparar e trazer os que estão presentes na lista
+-- Isso permite fazer consulta trazendo os valores especificados no range, como por exemplo IDs
+SELECT * FROM [Curso] WHERE [Id] IN (1,3,5)
+
+-- BETWEEN: permite buscar itens cujos valores estejam entre o intervalo definido
+-- Dessa forma não é necessário especificar todos os valores como acontece com o IN
+-- Pode ser usada para comparar data, mas deve ser fornecido o padrão do SQL SERVER: '2022-08-02' AND '2022-09-20' 
+SELECT * FROM [Curso] WHERE [Id] BETWEEN 2 AND 4
+
+
+-- ALIAS: é algo muito usado em junção de tabelas, pois como existem campos com mesmo nome podemos evitar conflitos nesses casos
+-- Em consultas ao invés de trazer o proprio nome da coluna é possível trocar a sua identificação
+SELECT [Id] AS [Identificador], [Nome] FROM [Curso] 
+SELECT COUNT([Id]) AS [Total] FROM [Categoria]
+
+-- JUNÇÃO DE TABELAS (JOIN)
+-- Muito dificilmente iremos precisar de dados que estão em uma única tabela. Em nosso exemplo temos os cursos em uma tabela e as suas
+-- respectivas categorias em outra. Para conseguir juntar esses dados usamos os JOINS. Existem vários tipos deles, sendo o mais famoso
+-- o INNER JOIN. Os demais tipos são: OUTER JOIN, LEFT JOIN e RIGHT JOIN.
+
+-- INNER JOIN (INTERSECÇÃO) -> quero buscar todos os cursos que também estejam nas categorias (deve haver correspondência). Se houver algum curso que não tem
+-- categoria cadastrada, ele não será mostrado. A relação geralmente é sempre feita via chave estrangeira/chave primária, mas nada impede de
+-- juntar por outros campos. 
+SELECT 
+[Curso].[Id],
+[Curso].[Nome], 
+[Curso].[CategoriaId],
+[Categoria].[Nome]
+FROM [Curso]
+INNER JOIN [Categoria]
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+
+-- LEFT JOIN -> pega todos os itens da primeira tabela, ou seja, a que está logo após o FROM. 
+-- Permite trazer, por exemplo todos os cursos independente de ter ou não categoria associada. 
+-- A categoria, caso não exista será apresentada como null. Isso aqui não irá acontecer, pois só conseguirei cadastrar curso se houver 
+-- uma categoria cadastrada (chave estrangeira). 
+SELECT
+[Curso].[Id],
+[Curso].[Nome], 
+[Curso].[CategoriaId],
+[Categoria].[Nome]
+FROM [Curso]
+LEFT JOIN [Categoria]
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+
+-- RIGHT JOIN -> é o processo oposto do LEFT JOIN. 
+-- irá trazer todos os dados da segunda tabela, independente de haver ou não correspondência primeira.
+-- no nosso exemplo irá trazer todas as categorias, independente de haver ou não cursos associados.
+-- se não houvesse algum curso, o mesmo seria apresentado como null.
+-- foi cadastrado uma nova categoria que não possui curso correspondente. veja que os dados do curso apareceram como NULL
+INSERT INTO [Categoria]([Nome])VALUES('Mobile')
+
+SELECT
+[Curso].[Id],
+[Curso].[Nome], 
+[Curso].[CategoriaId],
+[Categoria].[Nome]
+FROM
+[Curso]
+RIGHT JOIN [Categoria] 
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+
+
+-- FULL JOIN / FULL OUTER JOIN -> irá combinar o LEFT e o RIGHT JOIN
+-- irá trazer todos os cursos e todas as categorias. Dessa forma: 
+-- cursos sem categorias serão listados; e categorias sem cursos também serão listadas.  
+SELECT
+[Curso].[Id],
+[Curso].[Nome], 
+[Curso].[CategoriaId],
+[Categoria].[Nome]
+FROM
+[Curso]
+FULL OUTER JOIN [Categoria] 
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+
+-- UNION: permite juntar duas queries (consultas). Enquanto nos JOINS estamos juntando informações relacionadas
+-- no UNION elas não necessariamente estão. No entanto, os campos das consultas devem ter dados similares, ou seja, 
+-- conter o mesmo tipo de dado. Se ao invés de usar UNION colocarmos UNION ALL é como se estivesse executando um DISTINCT
+-- e pagando somente os valores diferentes
+SELECT
+[Id], 
+[Nome]
+FROM [Curso]
+UNION 
+SELECT
+[Id],
+[Nome]
+FROM [Categoria]
+
+
+-- GROUP BY: sempre que houver a necessidade de agrupar elementos devemos usar o GROUP BY. 
+-- ele é usado sempre com uma função de agregação, como por exemplo, o COUNT. 
+-- todas as colunas que estiverem sendo trazidas no SELECT devem estar contidas no GROUP BY.
+SELECT
+[CategoriaId] AS Categoria,
+COUNT([CategoriaId]) AS QtdCursos
+FROM [Curso]
+GROUP BY [CategoriaId]
+ORDER BY [CategoriaId]
+
+SELECT
+[Curso].[Nome],
+[Categoria].[Nome],
+COUNT([Curso].[Id]) AS QuantidadeCursos
+FROM [Curso]
+INNER JOIN [Categoria]
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+GROUP BY [Curso].[Nome],[Categoria].[Nome]
+
+-- HAVING: trata-se de uma condicional para quando estamos trabalhando com dados agrupados
+-- É usado em conjunto com o GROUP BY, ou seja, ao invés de usar WHERE usa-se o HAVING 
+-- O seu uso permite filtrar o agrupameto da forma desejada. 
+SELECT
+[Categoria].[Nome],
+COUNT([Curso].[Id]) as QtdCursos
+FROM [Curso]
+RIGHT JOIN [Categoria]
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+GROUP BY [Categoria].[Nome]
+HAVING COUNT([Curso].[Id]) = 0
+
+SELECT
+[Categoria].[Nome],
+COUNT([Curso].[Id]) as QtdCursos
+FROM [Curso]
+RIGHT JOIN [Categoria]
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+GROUP BY [Categoria].[Nome]
+HAVING COUNT([Curso].[Id]) >= 1
+ORDER BY COUNT([Curso].[Id]) 
+
+-- VIEWS: muitas vezes as nossas queries ficam grandes e precisam ser executadas com frequência.
+-- para facilitar a nossa vida existem as VIEWS. É uma "foto" de um SELECT que nós temos (consulta). 
+-- o interessante é que podemos fazer um select em cima de uma view criada posteriormente, comportando-se como uma tabela.
+-- Ao invés de usar o CREATE VIEW podemos usar diretamente o CREATE OR ALTER VIEW, pois assim se existir irá sobrescrever, caso contrário criará
+-- o comando ORDER BY é inválido em VIEWS.
+
+CREATE OR ALTER VIEW vwCategoriasSemCursosCadastrados AS
+SELECT
+[Categoria].[Nome],
+COUNT([Curso].[Id]) as QtdCursos
+FROM [Curso]
+RIGHT JOIN [Categoria]
+ON [Curso].[CategoriaId] = [Categoria].[Id]
+GROUP BY [Categoria].[Nome]
+HAVING COUNT([Curso].[Id]) = 0
+
+SELECT * FROM vwCategoriasSemCursosCadastrados
+
+SELECT * FROM vwCategoriasSemCursosCadastrados WHERE [Nome] = 'Mobile'
+
+
+-- STORED PROCEDURES: são procedimentos armazenados em outras palavras pedaços de código que são salvos e executados posteriormente.
+-- Dentro de uma SP podemos rodar qualquer uma das seguintes operações: CREATE, READ, UPDATE e DELETE. Inclusive combinar todos eles.
+-- Podemos ter também o uso do SELECT. Também não é interessante deixar regras de negócio em SP. O bacana é ter isso a nível de aplicação.
+-- Assim como na VIEW, uma STORED PROCEDURE pode ser criada usando: CREATE OR ALTER PROCEDURE <nome_procedimento>.
+CREATE OR ALTER PROCEDURE spListaCursos AS
+    SELECT TOP 10 * FROM [Curso]
+
+EXEC [spListaCursos] 
+
+DROP PROCEDURE [spListaCursos]
+
+
+-- Uma SP também pode ser entendida como um SCRIPT com fluxo de execução.
+-- Assim conseguimos usar dentro dela variáveis e parâmetros, tornando a lógica mais interessante.
+-- Abaixo vemos um exemplo de como declarar variáveis e atribuir valores a ela.
+DECLARE @CategoryId INT
+SET @CategoryId = (SELECT [Id] FROM Categoria WHERE [Nome] = 'Frontend')
+SELECT * FROM [Curso] WHERE [CategoriaId] = @CategoryId
+
+-- Por fim uma SP que recebe parâmetros e aplica uma lógica em cima dos valores recebidos
+-- Veja que o parâmetro foi inicializado, tornando ele opcional nesse caso
+-- Posso ter quando parâmetros for necessário, basta separá-los por vírgula 
+
+CREATE OR ALTER PROCEDURE [spListaCursosPorCategoria] 
+    @Categoria NVARCHAR(50) = 'Backend'
+AS
+    DECLARE @IdCategoria INT
+    SET @IdCategoria = (SELECT [Id] FROM [Categoria] WHERE [Nome] = @Categoria)
+    SELECT * FROM [Curso] WHERE CategoriaId = @IdCategoria
+
+EXEC [spListaCursosPorCategoria] 'Frontend'
+
+
 
 
